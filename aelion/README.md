@@ -71,6 +71,38 @@ The PowerShell launcher builds the project when needed and forwards arguments:
 .\scripts\run_aelion.ps1 "justice.review"
 ```
 
+## Persistent API
+
+Start the local authenticated API server on port 8080:
+
+```powershell
+$env:AELION_API_TOKEN = "change-this-local-token"
+.\build\aelion_binary.exe --serve 8080
+```
+
+The server listens on `127.0.0.1` and exposes:
+
+```text
+GET  /api/v1/health
+GET  /api/v1/metrics       (Bearer token required)
+GET  /api/v1/events        (Bearer token required)
+POST /api/v1/requests      (Bearer token required)
+```
+
+Submit structured JSON with an `Authorization: Bearer <token>` header:
+
+```json
+{"request":"justice.review"}
+```
+
+The default development token is `aelion-local-token`; set
+`AELION_API_TOKEN` for any shared or long-running environment. The API keeps
+request counters and the latest event in memory for its process lifetime.
+
+Open `src/hud/web/index.html` in a browser to use the dashboard. Enter the API
+endpoint and token, then submit requests and inspect live health, metrics, and
+events.
+
 Example requests:
 
 ```text

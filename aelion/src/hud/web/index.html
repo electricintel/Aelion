@@ -1,21 +1,28 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>AELION HUD</title>
-    <link rel=\"stylesheet\" href=\"style.css\">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Aelion Control Room</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>AELION HUD</h1>
-    <div id=\"event-stream\" class=\"panel\">
-        <h2>Event Stream</h2>
-        <pre id=\"stream-output\"></pre>
-    </div>
-
-    <div id=\"engine-output\" class=\"panel\">
-        <h2>Engine Output</h2>
-        <pre id=\"engine-output-text\"></pre>
-    </div>
-
-    <script src=\"hud.js\"></script>
+    <main class="shell">
+        <header class="topbar">
+            <div><p class="eyebrow">AELION / CONTROL ROOM</p><h1>Operational intelligence, at a glance.</h1></div>
+            <div class="connection"><span id="status-dot"></span><span id="connection-label">Connecting</span></div>
+        </header>
+        <section class="toolbar">
+            <label>API endpoint <input id="endpoint" value="http://127.0.0.1:8080"></label>
+            <label>Token <input id="token" type="password" placeholder="aelion-local-token"></label>
+            <button id="connect">Connect</button>
+        </section>
+        <section class="metrics"><article><span>Requests</span><strong id="requests">-</strong></article><article><span>Authorized</span><strong id="authorized">-</strong></article><article><span>Rejected</span><strong id="rejected">-</strong></article><article><span>Errors</span><strong id="errors">-</strong></article></section>
+        <section class="workspace">
+            <article class="panel"><div class="panel-head"><h2>Event stream</h2><span id="last-seen">Waiting</span></div><pre id="events">No events received.</pre></article>
+            <article class="panel"><div class="panel-head"><h2>Submit request</h2><span>POST /api/v1/requests</span></div><textarea id="request" spellcheck="false">{"request":"justice.review"}</textarea><button id="send">Send request</button><pre id="response">Response will appear here.</pre></article>
+        </section>
+    </main>
+    <script src="hud.js"></script>
 </body>
 </html>
