@@ -97,7 +97,38 @@ Submit structured JSON with an `Authorization: Bearer <token>` header:
 
 The default development token is `aelion-local-token`; set
 `AELION_API_TOKEN` for any shared or long-running environment. The API keeps
-request counters and the latest event in memory for its process lifetime.
+request counters and events in `AELION_DATA_DIR/events.log` (default: `data`),
+so accepted requests and the latest event survive a process restart.
+Protected routes require an exact `Authorization: Bearer <token>` header, and
+request bodies are limited to 4 KiB. Oversized requests return HTTP `413` and
+unsupported methods on `/api/v1/requests` return HTTP `405`.
+
+Production startup should set an explicit token and data directory:
+
+```powershell
+$env:AELION_ENV = "production"
+$env:AELION_API_HOST = "127.0.0.1"
+$env:AELION_API_PORT = "8080"
+$env:AELION_API_TOKEN = "use-a-secret-from-your-secret-store"
+$env:AELION_DATA_DIR = "C:\ProgramData\Aelion"
+.\build\aelion_binary.exe --serve
+```
+
+In production, startup fails if `AELION_API_TOKEN` is missing. Keep the API
+bound to loopback unless it is placed behind a TLS-terminating reverse proxy.
+
+Run the Windows API smoke test after building:
+
+```powershell
+.\scripts\api_smoke_test.ps1
+```
+
+The smoke test starts an isolated server, submits an authenticated structured
+request, checks metrics, and terminates the process.
+
+POSIX and Cygwin builds handle clients concurrently with synchronized metrics
+and journal writes. Native Windows builds use the portable synchronous server
+path; all platforms share the same API contract and persistence format.
 
 Open `src/hud/web/index.html` in a browser to use the dashboard. Enter the API
 endpoint and token, then submit requests and inspect live health, metrics, and

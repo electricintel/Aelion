@@ -54,6 +54,8 @@ all: $(BUILD)/$(BIN)
 
 ifeq ($(OS),Windows_NT)
 LDLIBS += -lws2_32
+else
+LDLIBS += -pthread
 endif
 
 $(BUILD)/$(BIN): $(OBJS)

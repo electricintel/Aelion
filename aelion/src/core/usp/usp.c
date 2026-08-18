@@ -17,8 +17,18 @@ static void append_field(char *out, size_t capacity, size_t *used, const char *f
 
 Sentence usp_parse(const char* raw) {
     Sentence s;
+    const char *separator;
+    size_t engine_length;
     memset(&s, 0, sizeof(Sentence));
     strncpy(s.payload, raw, sizeof(s.payload)-1);
+    strncpy(s.intent, raw, sizeof(s.intent) - 1);
+    separator = strchr(raw, '.');
+    if (separator && separator != raw) {
+        engine_length = (size_t)(separator - raw);
+        if (engine_length >= sizeof(s.target_engine)) engine_length = sizeof(s.target_engine) - 1;
+        memcpy(s.target_engine, raw, engine_length);
+        s.target_engine[engine_length] = '\0';
+    }
     return s;
 }
 

@@ -1,3 +1,7 @@
+#if !defined(_WIN32)
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #include "api_server.h"
 
 #include "../../core/bus/bus.h"
@@ -5,11 +9,22 @@
 #include "../../core/usp/usp.h"
 
 #include <stdio.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
+#if !defined(_WIN32)
+#include <pthread.h>
+#endif
+
 #if defined(_WIN32) || defined(__CYGWIN__)
+#if defined(_WIN32)
+#include <direct.h>
+#include <io.h>
+#else
+#include <sys/stat.h>
+#endif
 #include <winsock2.h>
 #include <ws2tcpip.h>
 typedef SOCKET socket_handle;
@@ -21,7 +36,10 @@ typedef SOCKET socket_handle;
 #include <errno.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/time.h>
 #include <unistd.h>
+#include <fcntl.h>
 typedef int socket_handle;
 #define INVALID_SOCKET (-1)
 #define CLOSE_SOCKET close
@@ -32,6 +50,18 @@ typedef int socket_handle;
 #define REQUEST_LIMIT 8192
 #define RESPONSE_LIMIT 16384
 #define DEFAULT_TOKEN "aelion-local-token"
+#define DEFAULT_DATA_DIR "data"
+#define MAX_BODY_SIZE 4096
+#define REQUEST_TIMEOUT_SECONDS 10
+
+#if !defined(_WIN32)
+static volatile sig_atomic_t shutdown_requested = 0;
+
+static void request_shutdown(int signal_number) {
+    (void)signal_number;
+    shutdown_requested = 1;
+}
+#endif
 
 typedef struct {
     unsigned long requests;
@@ -39,7 +69,59 @@ typedef struct {
     unsigned long rejected;
     unsigned long errors;
     char last_event[512];
+    char journal_path[1024];
 } ApiMetrics;
+
+typedef struct {
+    socket_handle client;
+    const char *token;
+    ApiMetrics *metrics;
+} ClientJob;
+
+#if !defined(_WIN32)
+static pthread_mutex_t metrics_lock = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
+static void load_journal(ApiMetrics *metrics) {
+    FILE *journal = fopen(metrics->journal_path, "r");
+    char line[768];
+    if (!journal) return;
+    while (fgets(line, sizeof(line), journal)) {
+        char *separator = strchr(line, '\t');
+        char *event = separator ? separator + 1 : line;
+        size_t length = strlen(event);
+        if (separator) *separator = '\0';
+        while (length > 0 && (event[length - 1] == '\n' || event[length - 1] == '\r')) event[--length] = '\0';
+        if (!separator || event[0] == '\0') continue;
+        metrics->requests++;
+        metrics->authorized++;
+        snprintf(metrics->last_event, sizeof(metrics->last_event), "%s", event);
+    }
+    fclose(journal);
+}
+
+static int append_journal(const ApiMetrics *metrics, const char *event) {
+    FILE *journal = fopen(metrics->journal_path, "a");
+    int result;
+    if (!journal) return 0;
+    result = fprintf(journal, "%lu\t%s\n", (unsigned long)time(NULL), event) > 0;
+    if (result && fflush(journal) != 0) result = 0;
+#if defined(_WIN32)
+    if (result && _commit(_fileno(journal)) != 0) result = 0;
+#elif defined(__unix__) && !defined(__CYGWIN__)
+    if (result && fsync(fileno(journal)) != 0) result = 0;
+#endif
+    fclose(journal);
+    return result;
+}
+
+static void ensure_data_dir(const char *path) {
+#if defined(_WIN32)
+    _mkdir(path);
+#else
+    mkdir(path, 0750);
+#endif
+}
 
 static int send_all(socket_handle client, const char *data, size_t length) {
     size_t sent = 0;
@@ -63,6 +145,7 @@ static int receive_request(socket_handle client, char *buffer, size_t capacity) 
         if (chunk <= 0) return received;
         received += chunk;
         buffer[received] = '\0';
+        if ((size_t)received >= capacity - 1) return -1;
         headers_end = strstr(buffer, "\r\n\r\n");
         if (headers_end) {
             length_header = strstr(buffer, "Content-Length:");
@@ -115,7 +198,7 @@ static int json_value(const char *json, const char *key, char *value, size_t cap
 
 static void http_response(socket_handle client, int status, const char *type, const char *body) {
     char header[512];
-    const char *reason = status == 200 ? "OK" : status == 201 ? "Created" : status == 401 ? "Unauthorized" : status == 404 ? "Not Found" : "Bad Request";
+    const char *reason = status == 200 ? "OK" : status == 201 ? "Created" : status == 401 ? "Unauthorized" : status == 404 ? "Not Found" : status == 405 ? "Method Not Allowed" : status == 413 ? "Payload Too Large" : status == 503 ? "Service Unavailable" : "Bad Request";
     int length = snprintf(header, sizeof(header),
         "HTTP/1.1 %d %s\r\nContent-Type: %s\r\nContent-Length: %zu\r\nConnection: close\r\nAccess-Control-Allow-Origin: *\r\n\r\n",
         status, reason, type, strlen(body));
@@ -124,9 +207,23 @@ static void http_response(socket_handle client, int status, const char *type, co
 }
 
 static int authorized(const char *request, const char *token) {
-    char expected[256];
-    snprintf(expected, sizeof(expected), "Authorization: Bearer %s", token);
-    return strstr(request, expected) != NULL;
+    const char *header = strstr(request, "\r\nAuthorization:");
+    if (!header) header = strstr(request, "\r\nauthorization:");
+    if (!header) header = strstr(request, "\nAuthorization:");
+    if (!header) header = strstr(request, "\nauthorization:");
+    size_t token_length = strlen(token);
+    if (!header) {
+        if (strncmp(request, "Authorization:", 14) == 0 || strncmp(request, "authorization:", 14) == 0) header = request;
+        else return 0;
+    }
+    if (*header == '\r') header++;
+    if (*header == '\n') header++;
+    header += 14;
+    while (*header == ' ' || *header == '\t') header++;
+    if (strncmp(header, "Bearer ", 7) != 0) return 0;
+    header += 7;
+    return strncmp(header, token, token_length) == 0 &&
+        (header[token_length] == '\r' || header[token_length] == '\n' || header[token_length] == '\0');
 }
 
 static void handle_request(socket_handle client, const char *request, const char *token, ApiMetrics *metrics) {
@@ -142,6 +239,12 @@ static void handle_request(socket_handle client, const char *request, const char
     sscanf(request, "%15s %255s", method, path);
     body_start = strstr(request, "\r\n\r\n");
     if (body_start) strncpy(body, body_start + 4, sizeof(body) - 1);
+
+    if (body_start && strlen(body) > MAX_BODY_SIZE) {
+        metrics->errors++;
+        http_response(client, 413, "application/json", "{\"error\":\"request_too_large\"}");
+        return;
+    }
 
     if (strcmp(path, "/health") == 0 || strcmp(path, "/api/v1/health") == 0) {
         snprintf(response, sizeof(response), "{\"status\":\"ok\",\"service\":\"aelion\",\"authenticated\":%s}", authorized(request, token) ? "true" : "false");
@@ -186,20 +289,60 @@ static void handle_request(socket_handle client, const char *request, const char
         bus_publish(&sentence);
         bus_route(&sentence);
         snprintf(metrics->last_event, sizeof(metrics->last_event), "%s", raw);
+        if (!append_journal(metrics, raw)) {
+            metrics->errors++;
+            http_response(client, 503, "application/json", "{\"error\":\"persistence_unavailable\"}");
+            return;
+        }
         json_escape(raw, escaped, sizeof(escaped));
         snprintf(response, sizeof(response), "{\"accepted\":true,\"request\":\"%s\",\"intent\":\"%s\",\"timestamp\":%lu}", escaped, sentence.intent, (unsigned long)time(NULL));
         http_response(client, 201, "application/json", response);
         return;
     }
 
+    if (strcmp(path, "/api/v1/requests") == 0) {
+        http_response(client, 405, "application/json", "{\"error\":\"method_not_allowed\"}");
+        return;
+    }
     http_response(client, 404, "application/json", "{\"error\":\"not_found\"}");
 }
 
-int api_server_run(const char *host, unsigned short port, const char *token) {
+#if !defined(_WIN32)
+static void *serve_client(void *argument) {
+    ClientJob *job = (ClientJob *)argument;
+    char request[REQUEST_LIMIT];
+    int received;
+
+    received = receive_request(job->client, request, sizeof(request));
+    pthread_mutex_lock(&metrics_lock);
+    if (received < 0) {
+        http_response(job->client, 413, "application/json", "{\"error\":\"request_too_large\"}");
+    } else if (received > 0) {
+        request[received] = '\0';
+        handle_request(job->client, request, job->token, job->metrics);
+    }
+    pthread_mutex_unlock(&metrics_lock);
+    CLOSE_SOCKET(job->client);
+    free(job);
+    return NULL;
+}
+#endif
+
+int api_server_run(const char *host, unsigned short port, const char *token, const char *data_dir) {
     socket_handle server;
     struct sockaddr_in address;
     ApiMetrics metrics = {0};
     const char *effective_token = token && token[0] ? token : DEFAULT_TOKEN;
+    const char *effective_data_dir = data_dir && data_dir[0] ? data_dir : DEFAULT_DATA_DIR;
+
+#if !defined(_WIN32)
+    signal(SIGINT, request_shutdown);
+    signal(SIGTERM, request_shutdown);
+#endif
+
+    ensure_data_dir(effective_data_dir);
+    snprintf(metrics.journal_path, sizeof(metrics.journal_path), "%s/events.log", effective_data_dir);
+    load_journal(&metrics);
 
 #if defined(_WIN32) || defined(__CYGWIN__)
     WSADATA winsock;
@@ -223,17 +366,51 @@ int api_server_run(const char *host, unsigned short port, const char *token) {
         return 1;
     }
     printf("[API] Listening on http://%s:%u (token authentication enabled)\n", host && host[0] ? host : "127.0.0.1", port);
-    for (;;) {
+    while (!shutdown_requested) {
         socket_handle client = accept(server, NULL, NULL);
-        char request[REQUEST_LIMIT];
-        int received;
         if (client == INVALID_SOCKET) continue;
-        received = receive_request(client, request, sizeof(request));
-        if (received > 0) {
-            request[received] = '\0';
-            handle_request(client, request, effective_token, &metrics);
+#if defined(_WIN32) || defined(__CYGWIN__)
+        {
+            DWORD timeout = REQUEST_TIMEOUT_SECONDS * 1000;
+            setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, (const char *)&timeout, sizeof(timeout));
+        }
+#else
+        {
+            struct timeval timeout = { REQUEST_TIMEOUT_SECONDS, 0 };
+            setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+        }
+#endif
+#if !defined(_WIN32)
+        {
+            ClientJob *job = (ClientJob *)malloc(sizeof(ClientJob));
+            pthread_t worker;
+            if (!job) {
+                CLOSE_SOCKET(client);
+                continue;
+            }
+            job->client = client;
+            job->token = effective_token;
+            job->metrics = &metrics;
+            if (pthread_create(&worker, NULL, serve_client, job) != 0) {
+                free(job);
+                CLOSE_SOCKET(client);
+                continue;
+            }
+            pthread_detach(worker);
+        }
+#else
+        {
+            char request[REQUEST_LIMIT];
+            int received = receive_request(client, request, sizeof(request));
+            if (received < 0) {
+                http_response(client, 413, "application/json", "{\"error\":\"request_too_large\"}");
+            } else if (received > 0) {
+                request[received] = '\0';
+                handle_request(client, request, effective_token, &metrics);
+            }
         }
         CLOSE_SOCKET(client);
+#endif
     }
     CLOSE_SOCKET(server);
 #if defined(_WIN32) || defined(__CYGWIN__)
