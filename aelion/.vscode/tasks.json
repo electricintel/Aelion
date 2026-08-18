@@ -1,0 +1,26 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Aelion (Unified)",
+      "type": "shell",
+      "command": "./scripts/build_all.sh",
+      "group": "build"
+    },
+
+    { "label": "Build Justice Engine", "type": "shell", "command": "gcc src/engines/justice/justice.c -o build/justice_engine" },
+    { "label": "Build Recall Engine", "type": "shell", "command": "gcc src/engines/recall/recall.c -o build/recall_engine" },
+    { "label": "Build Emotional Engine", "type": "shell", "command": "gcc src/engines/emotional/emotional.c -o build/emotional_engine" },
+    { "label": "Build Home Engine", "type": "shell", "command": "gcc src/engines/home/home.c -o build/home_engine" },
+    { "label": "Build Community Engine", "type": "shell", "command": "gcc src/engines/community/community.c -o build/community_engine" },
+    { "label": "Build Governance Engine", "type": "shell", "command": "gcc src/engines/governance/governance.c -o build/governance_engine" },
+    { "label": "Build Mining Engine", "type": "shell", "command": "gcc src/engines/mining/mining.c -o build/mining_engine" },
+
+    {
+      "label": "Run Aelion",
+      "type": "shell",
+      "command": "./scripts/run_local.sh",
+      "group": "test"
+    }
+  ]
+}

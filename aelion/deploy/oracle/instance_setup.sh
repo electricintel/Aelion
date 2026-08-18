@@ -1,7 +1,5 @@
-#!/bin/bash
-echo \"Setting up Oracle Cloud instance...\"
+#!/usr/bin/env bash
+set -euo pipefail
 
-sudo apt update
-sudo apt install -y build-essential git ufw
-
-echo \"Oracle instance ready.\"
+echo "Oracle setup is optional. No cloud provisioning is required for AELION."
+echo "Use make all, make test, and scripts/run_local.sh for local operation."

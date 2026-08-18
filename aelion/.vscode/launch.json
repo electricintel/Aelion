@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Aelion",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "/aelion_binary",
+      "cwd": "",
+      "MIMode": "gdb",
+      "externalConsole": true
+    }
+  ]
+}

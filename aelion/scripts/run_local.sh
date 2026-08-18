@@ -1,4 +1,6 @@
-#!/bin/bash
-echo \"Running AELION locally...\"
+#!/usr/bin/env bash
+set -euo pipefail
 
-./aelion_binary 2>/dev/null || echo \"(Placeholder) AELION binary not built yet.\"
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+make all
+exec "./build/aelion_binary" "$@"

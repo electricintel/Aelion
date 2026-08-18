@@ -2,9 +2,9 @@
 #include <stdio.h>
 
 void cli_start() {
-    printf(\"AELION CLI HUD started.\\n\");
+    printf("AELION CLI HUD started.\n");
 }
 
 void cli_render(const char* message) {
-    printf(\"[HUD] %s\\n\", message);
+    printf("[HUD] %s\n", message);
 }

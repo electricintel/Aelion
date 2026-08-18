@@ -1,4 +1,5 @@
 #include "usp.h"
+#include <stdio.h>
 #include <string.h>
 
 Sentence usp_parse(const char* raw) {

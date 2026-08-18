@@ -5,7 +5,7 @@
 void trim(char* str) {
     int len = strlen(str);
     while(len > 0 && str[len-1] == ' ') len--;
-    str[len] = '\\0';
+    str[len] = '\0';
 }
 
 void lowercase(char* str) {

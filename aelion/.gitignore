@@ -1,0 +1,11 @@
+build/
+logs/
+scripts/generated/
+*.o
+*.d
+*.exe
+desktop.ini
+
+# Local editor and workspace state
+.vscode/*.user
+.vscode/settings.json

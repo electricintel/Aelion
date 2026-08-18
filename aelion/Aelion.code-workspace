@@ -1,0 +1,82 @@
+{
+  "folders": [
+    { "path": "." }
+  ],
+  "settings": {
+    "files.associations": {
+      "*.c": "c",
+      "*.h": "c"
+    },
+    "terminal.integrated.defaultProfile.windows": "PowerShell"
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Build Aelion",
+        "type": "shell",
+        "command": "./scripts/build_all.sh",
+        "group": "build"
+      },
+      {
+        "label": "Run Aelion",
+        "type": "shell",
+        "command": "./scripts/run_local.sh",
+        "group": "test"
+      }
+    ]
+  },
+  "launch": {
+{
+  "folders": [
+    { "path": "." }
+  ],
+  "settings": {
+    "files.associations": {
+      "*.c": "c",
+      "*.h": "c"
+    },
+    "terminal.integrated.defaultProfile.windows": "PowerShell"
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Build Aelion",
+        "type": "shell",
+        "command": "./scripts/build_all.sh",
+        "group": "build"
+      },
+      {
+        "label": "Run Aelion",
+        "type": "shell",
+        "command": "./scripts/run_local.sh",
+        "group": "test"
+      }
+    ]
+  },
+  "launch": {
+    "configurations": [
+      {
+        "name": "Run Aelion Binary",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/aelion_binary",
+        "cwd": "${workspaceFolder}",
+        "MIMode": "gdb"
+      }
+    ]
+  }
+}
+    "configurations": [
+      {
+        "name": "Run Aelion Binary",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/aelion_binary",
+        "cwd": "${workspaceFolder}",
+        "MIMode": "gdb"
+      }
+    ]
+  }
+}

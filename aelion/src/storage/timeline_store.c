@@ -1,4 +1,4 @@
-#include \"timeline_store.h\"
+#include "timeline_store.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -10,12 +10,12 @@ void timeline_add(const char* event) {
         strncpy(timeline[timeline_index], event, sizeof(timeline[timeline_index])-1);
         timeline_index++;
     }
-    printf(\"[TIMELINE] Added event: %s\\n\", event);
+    printf("[TIMELINE] Added event: %s\n", event);
 }
 
 void timeline_dump() {
-    printf(\"[TIMELINE] Dumping events:\\n\");
+    printf("[TIMELINE] Dumping events:\n");
     for (int i = 0; i < timeline_index; i++) {
-        printf(\"  - %s\\n\", timeline[i]);
+        printf("  - %s\n", timeline[i]);
     }
 }
