@@ -1,0 +1,10 @@
+[Unit]
+Description=AELION Service
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/aelion
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

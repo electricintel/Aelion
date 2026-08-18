@@ -1,0 +1,15 @@
+routes:
+  justice:
+    intents: ["case.lookup", "case.analyze", "evidence.map"]
+  recall:
+    intents: ["timeline.store", "timeline.query"]
+  emotional:
+    intents: ["tone.analyze", "intent.predict"]
+  home:
+    intents: ["diagnose.home", "hazard.check"]
+  community:
+    intents: ["coord.task", "resource.route"]
+  governance:
+    intents: ["policy.check", "audit.review"]
+  mining:
+    intents: ["node.status", "mining.start"]

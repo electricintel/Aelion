@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  aelion:
+    build: .
+    container_name: aelion
+    restart: always
+    volumes:
+      - ../:/aelion
+    command: [\"/bin/bash\", \"scripts/run_local.sh\"]

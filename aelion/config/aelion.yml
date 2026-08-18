@@ -1,0 +1,11 @@
+system:
+  name: "AELION"
+  version: "0.1.0"
+  description: "Autonomous Ethical Logic Intelligence & Operations Network"
+  mode: "development"
+
+paths:
+  storage: "./src/storage"
+  engines: "./src/engines"
+  hud: "./src/hud"
+  services: "./src/services"

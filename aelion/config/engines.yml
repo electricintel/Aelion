@@ -1,0 +1,22 @@
+engines:
+  justice:
+    enabled: true
+    version: "0.1"
+  recall:
+    enabled: true
+    version: "0.1"
+  emotional:
+    enabled: true
+    version: "0.1"
+  home:
+    enabled: true
+    version: "0.1"
+  community:
+    enabled: true
+    version: "0.1"
+  governance:
+    enabled: true
+    version: "0.1"
+  mining:
+    enabled: false
+    version: "0.1"

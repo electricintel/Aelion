@@ -1,0 +1,143 @@
+aelion/
+├── README.md
+├── LICENSE
+├── .gitignore
+├── config/
+│   ├── aelion.yml
+│   ├── usp_routes.yml
+│   ├── governance.yml
+│   └── engines.yml
+├── docs/
+│   ├── architecture.md
+│   ├── usp_protocol.md
+│   ├── governance.md
+│   ├── engines.md
+│   ├── hud.md
+│   └── deployment.md
+├── src/
+│   ├── core/
+│   │   ├── usp/
+│   │   │   ├── usp.h
+│   │   │   ├── usp.c
+│   │   │   └── parser.c
+│   │   ├── bus/
+│   │   │   ├── bus.h
+│   │   │   ├── bus.c
+│   │   │   └── router.c
+│   │   ├── registry/
+│   │   │   ├── registry.h
+│   │   │   ├── registry.c
+│   │   │   └── health.c
+│   │   ├── security/
+│   │   │   ├── security.h
+│   │   │   ├── security.c
+│   │   │   └── audit.c
+│   │   └── common/
+│   │       ├── sentence.h
+│   │       ├── sentence.c
+│   │       ├── utils.h
+│   │       └── utils.c
+│   ├── engines/
+│   │   ├── justice/
+│   │   │   ├── justice.h
+│   │   │   ├── justice.c
+│   │   │   ├── bias.c
+│   │   │   └── evidence.c
+│   │   ├── recall/
+│   │   │   ├── recall.h
+│   │   │   ├── recall.c
+│   │   │   ├── timeline.c
+│   │   │   └── correlate.c
+│   │   ├── emotional/
+│   │   │   ├── emotional.h
+│   │   │   ├── emotional.c
+│   │   │   └── tone.c
+│   │   ├── home/
+│   │   │   ├── home.h
+│   │   │   ├── home.c
+│   │   │   └── diagnostics.c
+│   │   ├── community/
+│   │   │   ├── community.h
+│   │   │   ├── community.c
+│   │   │   └── routing.c
+│   │   ├── governance/
+│   │   │   ├── governance.h
+│   │   │   ├── governance.c
+│   │   │   └── policy.c
+│   │   └── mining/
+│   │       ├── mining.h
+│   │       ├── mining.c
+│   │       └── node.c
+│   ├── hud/
+│   │   ├── cli/
+│   │   │   ├── cli.h
+│   │   │   ├── cli.c
+│   │   │   └── commands.c
+│   │   └── web/
+│   │       ├── index.html
+│   │       ├── hud.js
+│   │       └── style.css
+│   ├── adapters/
+│   │   ├── termux/
+│   │   │   ├── termux.sh
+│   │   │   └── android_paths.c
+│   │   ├── linux/
+│   │   │   ├── linux_init.sh
+│   │   │   └── systemd.service
+│   │   ├── usos/
+│   │   │   ├── usos_adapter.h
+│   │   │   └── usos_adapter.c
+│   │   └── cloud/
+│   │       ├── oracle_deploy.sh
+│   │       └── dockerfile
+│   ├── storage/
+│   │   ├── kv.c
+│   │   ├── kv.h
+│   │   ├── timeline_store.c
+│   │   ├── timeline_store.h
+│   │   ├── logs.c
+│   │   └── logs.h
+│   └── services/
+│       ├── api/
+│       │   ├── api.h
+│       │   ├── api.c
+│       │   └── routes.c
+│       ├── scheduler/
+│       │   ├── scheduler.h
+│       │   ├── scheduler.c
+│       │   └── tasks.c
+│       └── supervisor/
+│           ├── supervisor.h
+│           ├── supervisor.c
+│           └── monitor.c
+├── tests/
+│   ├── core/
+│   │   ├── test_usp.c
+│   │   ├── test_bus.c
+│   │   └── test_registry.c
+│   ├── engines/
+│   │   ├── test_justice.c
+│   │   ├── test_recall.c
+│   │   ├── test_emotional.c
+│   │   ├── test_home.c
+│   │   ├── test_community.c
+│   │   ├── test_governance.c
+│   │   └── test_mining.c
+│   └── integration/
+│       ├── test_end_to_end.c
+│       └── test_hud.c
+├── scripts/
+│   ├── install_termux.sh
+│   ├── install_linux.sh
+│   ├── run_local.sh
+│   └── build_all.sh
+└── deploy/
+    ├── docker/
+    │   ├── docker-compose.yml
+    │   └── entrypoint.sh
+    ├── oracle/
+    │   ├── instance_setup.sh
+    │   └── firewall_rules.sh
+    └── systemd/
+        ├── aelion.service
+        └── aelion.target

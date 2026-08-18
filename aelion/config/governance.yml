@@ -1,0 +1,13 @@
+governance:
+  operator: "Philip"
+  mode: "core-operator"
+  policies:
+    allow:
+      - "case.lookup"
+      - "timeline.query"
+      - "tone.analyze"
+    deny:
+      - "mining.start"
+    review_required:
+      - "evidence.map"
+      - "hazard.check"
