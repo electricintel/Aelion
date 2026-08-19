@@ -3,6 +3,15 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+val releaseStoreFile = System.getenv("AELION_UPLOAD_STORE_FILE")
+val releaseStorePassword = System.getenv("AELION_UPLOAD_STORE_PASSWORD")
+val releaseKeyAlias = System.getenv("AELION_UPLOAD_KEY_ALIAS")
+val releaseKeyPassword = System.getenv("AELION_UPLOAD_KEY_PASSWORD")
+val hasReleaseSigning = !releaseStoreFile.isNullOrBlank()
+    && !releaseStorePassword.isNullOrBlank()
+    && !releaseKeyAlias.isNullOrBlank()
+    && !releaseKeyPassword.isNullOrBlank()
+
 android {
     namespace = "io.aelion.app"
     compileSdk = 34
@@ -26,9 +35,25 @@ android {
         }
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseStoreFile!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = if (hasReleaseSigning) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

@@ -1,0 +1,61 @@
+name: Android Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.8"
+
+      - name: Build release APK and AAB
+        working-directory: android
+        env:
+          AELION_UPLOAD_STORE_FILE: ${{ secrets.AELION_UPLOAD_STORE_FILE }}
+          AELION_UPLOAD_STORE_PASSWORD: ${{ secrets.AELION_UPLOAD_STORE_PASSWORD }}
+          AELION_UPLOAD_KEY_ALIAS: ${{ secrets.AELION_UPLOAD_KEY_ALIAS }}
+          AELION_UPLOAD_KEY_PASSWORD: ${{ secrets.AELION_UPLOAD_KEY_PASSWORD }}
+        run: |
+          gradle :app:assembleRelease :app:bundleRelease
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aelion-release-apk
+          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aelion-release-aab
+          path: android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+
+      - name: Attach artifacts to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab

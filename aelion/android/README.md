@@ -27,3 +27,17 @@ If your system does not have `gradle`, use Android Studio to generate and use a 
 ## Next integration step
 
 Wire Aelion core runtime functions into `app/src/main/cpp/aelion_android_bridge.c` to execute real engine commands from the Android UI.
+
+## Release pipeline
+
+This repository now includes a GitHub Actions workflow at `.github/workflows/android-release.yml`.
+
+- Trigger it manually from Actions, or push a tag like `v0.2.0`.
+- It builds release APK and AAB artifacts.
+- For real signing, set these repository secrets:
+  - `AELION_UPLOAD_STORE_FILE` (path on runner to keystore file)
+  - `AELION_UPLOAD_STORE_PASSWORD`
+  - `AELION_UPLOAD_KEY_ALIAS`
+  - `AELION_UPLOAD_KEY_PASSWORD`
+
+If signing secrets are not provided, the release build falls back to debug signing so CI still produces installable artifacts for testing.
