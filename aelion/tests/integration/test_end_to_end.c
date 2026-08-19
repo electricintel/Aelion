@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include "../../src/core/usp/usp.h"
-#include "../../src/core/bus/bus.h"
+#include "core/usp/usp.h"
+#include "core/bus/bus.h"
 
 int main() {
     Sentence s = usp_parse("integration test payload");

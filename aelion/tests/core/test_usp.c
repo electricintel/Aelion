@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include "../../src/core/usp/usp.h"
+#include "core/usp/usp.h"
 
 int main() {
     Sentence s = usp_parse("justice.review");

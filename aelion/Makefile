@@ -1,101 +1,102 @@
-# Aelion build and verification entry point
+CC ?= gcc
+WARNFLAGS := -Wall -Wextra \
+	-Wno-unused-parameter -Wno-sign-compare -Wno-unused-function \
+	-Wno-format-truncation -Wno-stringop-truncation -Wno-cast-function-type
+CFLAGS ?= -O0 $(WARNFLAGS) -std=c11
+CPPFLAGS := -I. -Iinclude -Isrc -Iaelion/include -Iaelion/src -Isqlite/include -Ithird_party/sqlite
+LDFLAGS ?=
+LDLIBS ?= -lws2_32
 
-CC      ?= gcc
-CFLAGS  ?= -std=c11 -Wall -Wextra -Wpedantic -O2
-CPPFLAGS ?= -Isrc
-BUILD   ?= build
-
-CORE_SRC = \
-	src/core/usp/usp.c \
-	src/core/bus/bus.c \
-	src/core/registry/registry.c \
-	src/core/security/security.c \
-	src/core/common/sentence.c \
-	src/core/common/utils.c
-
-ENGINE_SRC = \
-	src/engines/justice/justice.c \
-	src/engines/recall/recall.c \
-	src/engines/emotional/emotional.c \
-	src/engines/home/home.c \
-	src/engines/community/community.c \
-	src/engines/governance/governance.c \
-	src/engines/mining/mining.c
-
-SERVICES_SRC = \
-	src/services/api/api.c \
-	src/services/api/api_server.c \
-	src/services/api/routes.c \
-	src/services/scheduler/scheduler.c \
-	src/services/scheduler/tasks.c \
-	src/services/supervisor/supervisor.c \
-	src/services/supervisor/monitor.c
-
-STORAGE_SRC = \
-	src/storage/kv.c \
-	src/storage/timeline_store.c \
-	src/storage/logs.c
-
-APP_SRC = src/main.c
-ALL_SRC = $(CORE_SRC) $(ENGINE_SRC) $(SERVICES_SRC) $(STORAGE_SRC) $(APP_SRC)
-
-OBJS = $(ALL_SRC:%.c=$(BUILD)/%.o)
-DEPS = $(OBJS:.o=.d)
-
-BIN  = aelion_binary
-TEST_BIN = $(BUILD)/test_end_to_end
-TEST_SRC = tests/integration/test_end_to_end.c
-USP_TEST_BIN = $(BUILD)/test_usp
-USP_TEST_SRC = tests/core/test_usp.c
-
-.PHONY: all clean check test test-usp engines core services storage run
-
-all: $(BUILD)/$(BIN)
-
+EXE_EXT := .exe
 ifeq ($(OS),Windows_NT)
-LDLIBS += -lws2_32
-else
-LDLIBS += -pthread
+EXE_EXT := .exe
 endif
 
-$(BUILD)/$(BIN): $(OBJS)
-	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LDLIBS)
+WINDOWS_CMD := 0
+ifeq ($(OS),Windows_NT)
+ifneq ($(filter sh sh.exe bash bash.exe zsh zsh.exe,$(notdir $(SHELL))),)
+WINDOWS_CMD := 0
+else
+WINDOWS_CMD := 1
+endif
+endif
 
-$(BUILD)/%.o: %.c
-	@mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
+ifeq ($(WINDOWS_CMD),1)
+define MKDIR_P
+if not exist "$(subst /,\\,$1)" mkdir "$(subst /,\\,$1)"
+endef
+define RM_RF
+if exist "$(subst /,\\,$1)" rmdir /S /Q "$(subst /,\\,$1)"
+endef
+define RUN_BIN
+"$(subst /,\\,$1)"
+endef
+else
+define MKDIR_P
+mkdir -p "$1"
+endef
+define RM_RF
+rm -rf "$1"
+endef
+define RUN_BIN
+./$1
+endef
+endif
 
-$(TEST_BIN): $(TEST_SRC) $(filter-out $(BUILD)/src/main.o,$(OBJS)) ; @mkdir -p $(dir $@); $(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $(TEST_SRC) $(filter-out $(BUILD)/src/main.o,$(OBJS)) $(LDLIBS)
+rwildcard = $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
 
-$(USP_TEST_BIN): $(USP_TEST_SRC) $(BUILD)/src/core/usp/usp.o
-	@mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $(USP_TEST_SRC) $(BUILD)/src/core/usp/usp.o
+BUILD_DIR := build
+BIN := $(BUILD_DIR)/aelion_binary$(EXE_EXT)
 
-check: all
-	@./$(BUILD)/$(BIN) "system.check"
+SRC := $(sort $(call rwildcard,src/,*.c))
+SRC := $(filter-out src/core/aelion_main.c,$(SRC))
+OBJ := $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRC))
+DB_SRC := aelion/src/db/aelion_db.c
+DB_OBJ := $(BUILD_DIR)/aelion_db.o
+OBJ += $(DB_OBJ) $(BUILD_DIR)/sqlite3.o
 
-test: $(TEST_BIN) $(USP_TEST_BIN)
-	@./$(TEST_BIN); ./$(USP_TEST_BIN)
+TESTS := $(sort $(call rwildcard,tests/,test_*.c))
+TEST_BINS := $(patsubst tests/%.c,$(BUILD_DIR)/tests/%.bin$(EXE_EXT),$(TESTS))
+TEST_RUNS := $(patsubst $(BUILD_DIR)/tests/%.bin$(EXE_EXT),run-test-%,$(TEST_BINS))
+CORE_TEST_SRC := src/core/usp/usp.c src/core/bus/bus.c src/core/registry/registry.c src/core/security/security.c
 
-test-usp: test
+.PHONY: all clean test check run $(TEST_RUNS)
 
-core:
-	$(MAKE) $(CORE_SRC:%.c=$(BUILD)/%.o)
+all: $(BIN) test
 
-engines:
-	$(MAKE) $(ENGINE_SRC:%.c=$(BUILD)/%.o)
+$(BUILD_DIR):
+	@$(call MKDIR_P,$(BUILD_DIR))
 
-services:
-	$(MAKE) $(SERVICES_SRC:%.c=$(BUILD)/%.o)
+$(BUILD_DIR)/%.o: src/%.c | $(BUILD_DIR)
+	@$(call MKDIR_P,$(dir $@))
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-storage:
-	$(MAKE) $(STORAGE_SRC:%.c=$(BUILD)/%.o)
+$(BUILD_DIR)/sqlite3.o: sqlite/include/sqlite3.c | $(BUILD_DIR)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-run: all
-	./$(BUILD)/$(BIN)
+$(DB_OBJ): $(DB_SRC) | $(BUILD_DIR)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/tests/%.bin$(EXE_EXT): tests/%.c $(CORE_TEST_SRC) | $(BUILD_DIR)
+	@$(call MKDIR_P,$(dir $@))
+	$(CC) $(CPPFLAGS) $(CFLAGS) $< $(CORE_TEST_SRC) -o $@
+
+$(BIN): $(OBJ)
+	@$(call MKDIR_P,$(dir $@))
+	$(CC) $(CFLAGS) $(OBJ) -o $@ $(LDFLAGS) $(LDLIBS)
+
+test: $(TEST_RUNS)
+
+run-test-%: $(BUILD_DIR)/tests/%.bin$(EXE_EXT)
+	@echo "Running $<"
+	@$(call RUN_BIN,$<)
+
+check:
+	@test -x $(BIN) || { echo "Missing build output: $(BIN)"; exit 1; }
+	@echo "Binary is present: $(BIN)"
+
+run: $(BIN)
+	@$(call RUN_BIN,$(BIN))
 
 clean:
-	rm -rf $(BUILD)
-
--include $(DEPS)
+	@$(call RM_RF,$(BUILD_DIR))

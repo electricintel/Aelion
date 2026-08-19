@@ -1,0 +1,5 @@
+mkdir -p build
+cc -I. -Iinclude -Isrc -Iaelion/include -Iaelion/src -Isqlite/include -Ithird_party/sqlite -O2 -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -Wno-unused-function -std=c11 -c src/adapters/termux/android_paths.c -o build/adapters/termux/android_paths.o
+make: *** wait: No child processes.  Stop.
+make: *** Waiting for unfinished jobs....
+make: *** wait: No child processes.  Stop.
