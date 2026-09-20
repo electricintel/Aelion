@@ -1,5 +1,5 @@
 param(
-    [int]$Port = 18095,
+    [int]$Port = 0,
     [string]$Token = "aelion-smoke-token"
 )
 
@@ -8,6 +8,13 @@ $root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $dataDir = Join-Path $root "build\api-smoke-data"
 $binary = Join-Path $root "build\aelion_binary.exe"
 if (!(Test-Path $binary)) { $binary = Join-Path $root "build\aelion_binary" }
+
+if ($Port -eq 0) {
+    $listener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0)
+    $listener.Start()
+    $Port = ([Net.IPEndPoint]$listener.LocalEndpoint).Port
+    $listener.Stop()
+}
 
 Remove-Item $dataDir -Recurse -Force -ErrorAction SilentlyContinue
 $env:AELION_API_TOKEN = $Token

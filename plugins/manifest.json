@@ -1,0 +1,7 @@
+{
+    "plugins": [
+        { "name": "hello", "autoload": true },
+        { "name": "logger", "autoload": true },
+        { "name": "metrics", "autoload": false }
+    ]
+}

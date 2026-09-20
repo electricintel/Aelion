@@ -1,0 +1,32 @@
+{
+  "rungs": [
+    {
+      "name": "Offline toolchain preflight",
+      "upgrade": [],
+      "validate": [
+        "$required = @('git', 'make', 'gcc'); $missing = $required | Where-Object { -not (Get-Command $_ -ErrorAction SilentlyContinue) }; if ($missing) { throw \"Missing required tools: $($missing -join ', ')\" }; if (-not (Test-Path 'aelion/Makefile')) { throw 'Missing aelion/Makefile.' }"
+      ]
+    },
+    {
+      "name": "Clean local build",
+      "upgrade": [],
+      "validate": [
+        "Set-Location aelion; make clean; make all; make check"
+      ]
+    },
+    {
+      "name": "Core regression tests",
+      "upgrade": [],
+      "validate": [
+        "Set-Location aelion; make test"
+      ]
+    },
+    {
+      "name": "Local API smoke test",
+      "upgrade": [],
+      "validate": [
+        "Set-Location aelion; make all; & ./scripts/api_smoke_test.ps1"
+      ]
+    }
+  ]
+}

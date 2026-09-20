@@ -1,26 +1,80 @@
 {
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "Build Aelion (Unified)",
-      "type": "shell",
-      "command": "./scripts/build_all.sh",
-      "group": "build"
-    },
-
-    { "label": "Build Justice Engine", "type": "shell", "command": "gcc src/engines/justice/justice.c -o build/justice_engine" },
-    { "label": "Build Recall Engine", "type": "shell", "command": "gcc src/engines/recall/recall.c -o build/recall_engine" },
-    { "label": "Build Emotional Engine", "type": "shell", "command": "gcc src/engines/emotional/emotional.c -o build/emotional_engine" },
-    { "label": "Build Home Engine", "type": "shell", "command": "gcc src/engines/home/home.c -o build/home_engine" },
-    { "label": "Build Community Engine", "type": "shell", "command": "gcc src/engines/community/community.c -o build/community_engine" },
-    { "label": "Build Governance Engine", "type": "shell", "command": "gcc src/engines/governance/governance.c -o build/governance_engine" },
-    { "label": "Build Mining Engine", "type": "shell", "command": "gcc src/engines/mining/mining.c -o build/mining_engine" },
-
-    {
-      "label": "Run Aelion",
-      "type": "shell",
-      "command": "./scripts/run_local.sh",
-      "group": "test"
-    }
-  ]
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Aelion: Build",
+            "type": "shell",
+            "command": "make",
+            "group": "build",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "Aelion: Clean",
+            "type": "shell",
+            "command": "make clean"
+        },
+        {
+            "label": "Aelion: Run Shell",
+            "type": "shell",
+            "command": "./bin/aelion.exe",
+            "group": "test"
+        },
+        {
+            "label": "Aelion: Debug Shell",
+            "type": "shell",
+            "command": "gdb ./bin/aelion.exe"
+        },
+        {
+            "label": "Aelion: Verify SQLite",
+            "type": "shell",
+            "command": "dir C:/sqlite/include/sqlite3.h && dir C:/sqlite/sqlite3.dll"
+        },
+        {
+            "label": "Aelion: Build Plugin",
+            "type": "shell",
+            "command": "gcc -shared -o plugins/${input:pluginName}.dll plugins/${input:pluginName}.c -IC:/sqlite/include -LC:/sqlite -lsqlite3"
+        },
+        {
+            "label": "Aelion: Scaffold Engine",
+            "type": "shell",
+            "command": "echo \"// Engine ${input:engineName}\" > src/engines/${input:engineName}/${input:engineName}.c"
+        },
+        {
+            "label": "Aelion: Scaffold Service",
+            "type": "shell",
+            "command": "echo \"// Service ${input:serviceName}\" > src/services/${input:serviceName}/${input:serviceName}.c"
+        },
+        {
+            "label": "Aelion: Scaffold HUD",
+            "type": "shell",
+            "command": "echo \"// HUD ${input:hudName}\" > src/hud/${input:hudName}/${input:hudName}.c"
+        },
+        {
+            "label": "Aelion: Watch",
+            "type": "shell",
+            "command": "powershell -Command \"Get-ChildItem -Recurse src | Wait-Event\""
+        }
+    ],
+    "inputs": [
+        {
+            "id": "pluginName",
+            "type": "promptString",
+            "description": "Plugin name?"
+        },
+        {
+            "id": "engineName",
+            "type": "promptString",
+            "description": "Engine name?"
+        },
+        {
+            "id": "serviceName",
+            "type": "promptString",
+            "description": "Service name?"
+        },
+        {
+            "id": "hudName",
+            "type": "promptString",
+            "description": "HUD module name?"
+        }
+    ]
 }

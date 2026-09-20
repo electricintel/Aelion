@@ -2,7 +2,7 @@ CC ?= gcc
 WARNFLAGS := -Wall -Wextra \
 	-Wno-unused-parameter -Wno-sign-compare -Wno-unused-function \
 	-Wno-format-truncation -Wno-stringop-truncation -Wno-cast-function-type
-CFLAGS ?= -O0 $(WARNFLAGS) -std=c11
+CFLAGS ?= -O2 $(WARNFLAGS) -std=c11
 CPPFLAGS := -I. -Iinclude -Isrc -Iaelion/include -Iaelion/src -Isqlite/include -Ithird_party/sqlite
 LDFLAGS ?=
 LDLIBS ?= -lws2_32
@@ -55,14 +55,28 @@ DB_SRC := aelion/src/db/aelion_db.c
 DB_OBJ := $(BUILD_DIR)/aelion_db.o
 OBJ += $(DB_OBJ) $(BUILD_DIR)/sqlite3.o
 
-TESTS := $(sort $(call rwildcard,tests/,test_*.c))
+TESTS := \
+	tests/core/test_bus.c \
+	tests/core/test_registry.c \
+	tests/core/test_usp.c \
+	tests/engines/test_community.c \
+	tests/engines/test_emotional.c \
+	tests/engines/test_governance.c \
+	tests/engines/test_home.c \
+	tests/engines/test_justice.c \
+	tests/engines/test_mining.c \
+	tests/engines/test_recall.c \
+	tests/integration/test_end_to_end.c \
+	tests/integration/test_hud.c
 TEST_BINS := $(patsubst tests/%.c,$(BUILD_DIR)/tests/%.bin$(EXE_EXT),$(TESTS))
 TEST_RUNS := $(patsubst $(BUILD_DIR)/tests/%.bin$(EXE_EXT),run-test-%,$(TEST_BINS))
 CORE_TEST_SRC := src/core/usp/usp.c src/core/bus/bus.c src/core/registry/registry.c src/core/security/security.c
 
-.PHONY: all clean test check run $(TEST_RUNS)
+.PHONY: all clean test check run release $(TEST_RUNS)
 
-all: $(BIN) test
+all: $(BIN)
+
+release: $(BIN)
 
 $(BUILD_DIR):
 	@$(call MKDIR_P,$(BUILD_DIR))
@@ -72,9 +86,11 @@ $(BUILD_DIR)/%.o: src/%.c | $(BUILD_DIR)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/sqlite3.o: sqlite/include/sqlite3.c | $(BUILD_DIR)
+	@$(call MKDIR_P,$(dir $@))
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 $(DB_OBJ): $(DB_SRC) | $(BUILD_DIR)
+	@$(call MKDIR_P,$(dir $@))
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/tests/%.bin$(EXE_EXT): tests/%.c $(CORE_TEST_SRC) | $(BUILD_DIR)

@@ -1,14 +1,18 @@
 {
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Debug Aelion",
-      "type": "cppdbg",
-      "request": "launch",
-      "program": "/aelion_binary",
-      "cwd": "",
-      "MIMode": "gdb",
-      "externalConsole": true
-    }
-  ]
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Aelion Shell",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/aelion.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "miDebuggerPath": "gdb"
+        }
+    ]
 }
