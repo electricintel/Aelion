@@ -1,6 +1,8 @@
 build/
 logs/
 scripts/generated/
+android/.gradle/
+android/local.properties
 *.o
 *.d
 *.exe
